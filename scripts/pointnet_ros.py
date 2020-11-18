@@ -1,14 +1,15 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import rospy
 from std_msgs.msg import String
 from sensor_msgs.msg import PointCloud2
+import sensor_msgs.point_cloud2 as pc2
 from geometry_msgs.msg import PoseArray
 from geometry_msgs.msg import Pose
 from rhd3d import HumanDetector3D
 import numpy as np
 
-import pcl
-import pcl_helper
+# import python_pcl
+# import pcl_helper
 
 # subscribe lidar msgs and change to numpy.ndarray
 # publish centroid by pose array msgs from pointnet func 
@@ -36,22 +37,27 @@ class PointnetROS:
 
 
     def callback(self, data):
-        #pointcloud data to ndarray 
+        #pointcloud data to ndarray [ N x (x, y, z, intensity) ]
         N = data.width #changed to pointcloud width
+        points = np.zeros((N, 4)).astype(np.float32)
+        i=0
+        for p in pc2.read_points(data):
+            point = [p[0],p[1],p[2],p[3]]
+            points[i] = point
+            i=i+1
 
-        #points = N x (x, y, z, intensity)
-        points = pcl_helper.ros_to_pcl(data)
-
+        #get result of pointnet
         results = self.detector.get_result(points)
-
+        
+        #publish by posearray msg
         msg = PoseArray()
         msg.header = rospy.Time.now()
         for idx in range(results.shape[0]):
             pose = Pose()
+            pose.position.x = results[idx,0]
+            pose.position.y = results[idx,1]
+            pose.position.z = results[idx,2]
             pose.orientation.w = results[idx, 3]
-            pose.orientation.x = results[idx, 0]
-            pose.orientation.y = results[idx, 1]
-            pose.orientation.z = results[idx, 2]
             msg.poses.append(pose)
 
         self.pub.publish(msg)
