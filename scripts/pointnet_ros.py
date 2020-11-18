@@ -46,12 +46,12 @@ class PointnetROS:
 
         msg = PoseArray()
         msg.header = rospy.Time.now()
-        for object_id in range(results.shape[0]):
+        for idx in range(results.shape[0]):
             pose = Pose()
-            pose.orientation.w = object_id
-            pose.orientation.x = results[object_id, 0]
-            pose.orientation.y = results[object_id, 1]
-            pose.orientation.z = results[object_id, 2]
+            pose.orientation.w = results[idx, 3]
+            pose.orientation.x = results[idx, 0]
+            pose.orientation.y = results[idx, 1]
+            pose.orientation.z = results[idx, 2]
             msg.poses.append(pose)
 
         self.pub.publish(msg)
