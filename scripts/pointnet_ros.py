@@ -26,10 +26,10 @@ class PointnetROS:
 
         rospy.init_node('pointcloud_listener', anonymous=True)
 
-        posearray_topic = rospy.get_param("posearray_topic")
+        posearray_topic = rospy.get_param("posearray_topic", "/people_pose")
         self.pub = rospy.Publisher(posearray_topic, PoseArray, queue_size=10)
 
-        rospy.Subscriber("/scan_matched_points2", PointCloud2, self.callback)
+        rospy.Subscriber("/velodyne_points", PointCloud2, self.callback)
 
         self.detector = HumanDetector3D(normalize_intensity=True)
 
@@ -51,7 +51,7 @@ class PointnetROS:
         
         #publish by posearray msg
         msg = PoseArray()
-        msg.header = rospy.Time.now()
+        msg.header.stamp = rospy.Time.now()
         for idx in range(results.shape[0]):
             pose = Pose()
             pose.position.x = results[idx,0]
