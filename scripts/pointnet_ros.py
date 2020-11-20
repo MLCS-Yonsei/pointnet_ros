@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import rospy
+import ros_numpy
+
 from std_msgs.msg import String
 from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
@@ -39,12 +41,20 @@ class PointnetROS:
     def callback(self, data):
         #pointcloud data to ndarray [ N x (x, y, z, intensity) ]
         N = data.width #changed to pointcloud width
+        pc = ros_numpy.numpify(data)
         points = np.zeros((N, 4)).astype(np.float32)
-        i=0
-        for p in pc2.read_points(data, field_names=("x", "y", "z","intensity")):
-            point = [p[0],p[1],p[2],p[3]]
-            points[i] = point
-            i=i+1
+        points[:,0] = pc['x']
+        points[:,1] = pc['y']
+        points[:,2] = pc['z']
+        points[:,3] = pc['intensity']
+
+        # N = data.width #changed to pointcloud width
+        # points = np.zeros((N, 4)).astype(np.float32)
+        # i=0
+        # for p in pc2.read_points(data, field_names=("x", "y", "z","intensity")):
+        #     point = [p[0],p[1],p[2],p[3]]
+        #     points[i] = point
+        #     i=i+1
 
         #get result of pointnet
         results = self.detector.get_result(points)
@@ -53,6 +63,7 @@ class PointnetROS:
         msg = PoseArray()
         msg.header.frame_id = "velodyne"
         msg.header.stamp = rospy.Time.now()
+
         for idx in range(results.shape[0]):
             pose = Pose()
             pose.position.x = results[idx,0]
