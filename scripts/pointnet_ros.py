@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
+import numpy as np
 import rospy
 import ros_numpy
+from rhd3d import HumanDetector3D
 
 from std_msgs.msg import String
 from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
 from geometry_msgs.msg import PoseArray
 from geometry_msgs.msg import Pose
-from rhd3d import HumanDetector3D
-import numpy as np
 
 # import python_pcl
 # import pcl_helper
@@ -31,7 +31,7 @@ class PointnetROS:
         posearray_topic = rospy.get_param("posearray_topic", "/people_pose")
         self.pub = rospy.Publisher(posearray_topic, PoseArray, queue_size=10)
 
-        rospy.Subscriber("/velodyne_points", PointCloud2, self.callback)
+        rospy.Subscriber("/velodyne_points", PointCloud2, self.callback, queue_size=1)
 
         self.detector = HumanDetector3D(normalize_intensity=True)
 
@@ -48,21 +48,16 @@ class PointnetROS:
         points[:,2] = pc['z']
         points[:,3] = pc['intensity']
 
-        # N = data.width #changed to pointcloud width
-        # points = np.zeros((N, 4)).astype(np.float32)
-        # i=0
-        # for p in pc2.read_points(data, field_names=("x", "y", "z","intensity")):
-        #     point = [p[0],p[1],p[2],p[3]]
-        #     points[i] = point
-        #     i=i+1
-
         #get result of pointnet
-        results = self.detector.get_result(points)
+        try:
+            results = self.detector.get_result(points)
+        except AttributeError:
+            return 0
         
         #publish by posearray msg
         msg = PoseArray()
         msg.header.frame_id = "velodyne"
-        msg.header.stamp = rospy.Time.now()
+        msg.header.stamp = data.header.stamp
 
         for idx in range(results.shape[0]):
             pose = Pose()
