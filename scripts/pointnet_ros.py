@@ -31,7 +31,9 @@ class PointnetROS:
         posearray_topic = rospy.get_param("posearray_topic", "/people_pose")
         self.pub = rospy.Publisher(posearray_topic, PoseArray, queue_size=10)
 
-        rospy.Subscriber("/velodyne_points", PointCloud2, self.callback, queue_size=1)
+        #rospy.Subscriber("/scan_matched_points2", PointCloud2, self.callback, queue_size=1) # cartographer msg
+        #rospy.Subscriber("/front_velodyne/velodyne_points", PointCloud2, self.callback, queue_size=1) # single velodyne msg (2020final)
+        rospy.Subscriber("/velodyne_points", PointCloud2, self.callback, queue_size=1) # single velodyne msg (our_robot)
 
         self.detector = HumanDetector3D(normalize_intensity=True)
 
@@ -47,6 +49,7 @@ class PointnetROS:
         points[:,1] = pc['y']
         points[:,2] = pc['z']
         points[:,3] = pc['intensity']
+        #points[:,3] = 255*np.ones_like(pc['x'])
 
         #get result of pointnet
         try:
@@ -56,7 +59,11 @@ class PointnetROS:
         
         #publish by posearray msg
         msg = PoseArray()
-        msg.header.frame_id = "velodyne"
+       
+        #msg.header.frame_id = "map" # "map" with /scan_match_points2 (cartographer)
+        #msg.header.frame_id = "front_velodyne" # "front_velodyne" with /front_velodyne/velodyne_points (2020final)
+        msg.header.frame_id = "velodyne" # "velodyne" with /velodyne_points (our_robot)
+        
         msg.header.stamp = data.header.stamp
 
         for idx in range(results.shape[0]):
